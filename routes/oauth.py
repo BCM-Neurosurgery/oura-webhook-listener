@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import request, redirect
 from urllib.parse import urlencode
 import requests
@@ -38,6 +40,7 @@ def register_oauth_routes(app, config):
 
         tokens = resp.json()
         tokens['participant_id'] = participant_id  # Store for reference
+        tokens['refreshed_at'] = datetime.now()
 
         # Save token to file
         os.makedirs(config["data_dir"], exist_ok=True)

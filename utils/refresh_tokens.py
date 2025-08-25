@@ -2,20 +2,19 @@ import os
 import json
 import requests
 from datetime import datetime
+from config import load_config
 
-BASE_DIR ='/home/ec2-user/oura_webhook_listener/' 
-CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
-TOKEN_PATH = os.path.join(BASE_DIR, "oura_data", "oura_tokens.json")
 
 def refresh_tokens():
-    with open(CONFIG_PATH, "r") as f:
-        config = json.load(f)
 
-    if not os.path.exists(TOKEN_PATH):
+    config = load_config()
+    token_path = os.path.join(config["data_dir"], "oura_tokens.json")
+
+    if not os.path.exists(token_path):
         print("No token file found.")
         return
 
-    with open(TOKEN_PATH, "r") as f:
+    with open(token_path, "r") as f:
         all_tokens = json.load(f)
 
     updated = False
@@ -50,7 +49,7 @@ def refresh_tokens():
         print(f"[{participant_id}] Token refreshed.")
 
     if updated:
-        with open(TOKEN_PATH, "w") as f:
+        with open(token_path, "w") as f:
             json.dump(all_tokens, f, indent=2)
 
 if __name__ == "__main__":

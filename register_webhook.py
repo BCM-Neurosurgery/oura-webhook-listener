@@ -9,7 +9,7 @@ DATA_TYPES = [
     "daily_activity", "daily_readiness", "daily_sleep", "daily_spo2",
     "sleep_time", "workout", "tag", "session", "daily_stress",
     "daily_resilience", "daily_cardiovascular_age", "vo2_max",
-    "rest_mode_period"
+    "rest_mode_period", "sleep", "enhanced_tag"
 ]
 
 def list_existing_webhooks(config, participant_id):

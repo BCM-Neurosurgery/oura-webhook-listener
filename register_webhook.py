@@ -5,12 +5,6 @@ import requests
 from config import load_config
 from services.oura_api import register_webhook_subscription
 
-DATA_TYPES = [
-    "daily_activity", "daily_readiness", "daily_sleep", "daily_spo2",
-    "sleep_time", "workout", "tag", "session", "daily_stress",
-    "daily_resilience", "daily_cardiovascular_age", "vo2_max",
-    "rest_mode_period"
-]
 
 def list_existing_webhooks(config, participant_id):
     token_path = os.path.join(config["data_dir"], "oura_tokens.json")
@@ -42,7 +36,7 @@ def register_all_webhooks(config, participant_id, retries=3):
     print(f"Existing webhooks: {existing}")
 
     failed = []
-    for data_type in DATA_TYPES:
+    for data_type in config["data_types"]:
         if data_type in existing:
             print(f"Skipping {data_type} (already registered)")
             continue

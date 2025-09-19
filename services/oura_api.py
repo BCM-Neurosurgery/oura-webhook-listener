@@ -41,3 +41,4 @@ def register_webhook_subscription(config, participant_id, data_type="daily_activ
     print(" Webhook subscription response:")
     print("Status:", response.status_code)
     print("Response:", response.text)
+    return response.status_code

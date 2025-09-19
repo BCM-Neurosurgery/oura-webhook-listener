@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import request, redirect
 from urllib.parse import urlencode
 import requests
@@ -9,11 +11,12 @@ def register_oauth_routes(app, config):
         participant_id = request.args.get("participant_id")
         if not participant_id:
             return "Missing participant ID", 400
+        scope = " ".join(config["data_types"])
         auth_params = {
             "client_id": config["client_id"],
             "redirect_uri": f"{config['server_address']}/callback",
             "response_type": "code",
-            "scope": "daily heartrate workout session tag",
+            "scope": scope,
             "state": participant_id
         }
         return redirect(f"https://cloud.ouraring.com/oauth/authorize?{urlencode(auth_params)}")
@@ -38,6 +41,7 @@ def register_oauth_routes(app, config):
 
         tokens = resp.json()
         tokens['participant_id'] = participant_id  # Store for reference
+        tokens['created_at'] = datetime.now().isoformat()
 
         # Save token to file
         os.makedirs(config["data_dir"], exist_ok=True)

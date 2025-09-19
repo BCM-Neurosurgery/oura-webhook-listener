@@ -9,6 +9,7 @@ def refresh_tokens():
 
     config = load_config()
     token_path = os.path.join(config["data_dir"], "oura_tokens.json")
+    print(f'Running refresh at {datetime.now()}')
 
     if not os.path.exists(token_path):
         print("No token file found.")

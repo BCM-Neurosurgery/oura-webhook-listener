@@ -29,7 +29,7 @@ def list_existing_webhooks(config, participant_id):
         print(f"Failed to list existing webhooks: {resp.text}")
         return []
 
-    return [f'{wh["data_type"]} {wh["data_type"]}' for wh in resp.json()]
+    return [f'{wh["data_type"]} {wh["event_type"]}' for wh in resp.json()]
 
 def register_all_webhooks(config, participant_id, retries=3):
     existing = list_existing_webhooks(config, participant_id)
@@ -38,11 +38,11 @@ def register_all_webhooks(config, participant_id, retries=3):
     failed = []
     for data_type in config["data_types"]:
         for event_type in config["event_types"]:
-            if f'{data_type} {data_type}' in existing:
-                print(f"Skipping {data_type} (already registered)")
+            if f'{data_type} {event_type}' in existing:
+                print(f"Skipping {data_type} {event_type} (already registered)")
                 continue
 
-            print(f"Registering webhook for {data_type}...")
+            print(f"Registering webhook for {data_type} {event_type}...")
             status = register_webhook_subscription(
                 config,
                 participant_id=participant_id,
@@ -51,7 +51,7 @@ def register_all_webhooks(config, participant_id, retries=3):
             )
 
             if status != 201:
-                print(f"[{data_type}] Failed with status {status}. Will retry.")
+                print(f"[{data_type} {data_type}] Failed with status {status}. Will retry.")
                 failed.append((data_type, event_type))
             time.sleep(1.5)  # small delay per OAuth/Ouraring API recs
 
@@ -61,7 +61,7 @@ def register_all_webhooks(config, participant_id, retries=3):
         print(f"\nRetry attempt {attempt} for failed subscriptions...")
         still_failed = []
         for data_type, event_type in failed:
-            print(f"Retrying {data_type}...")
+            print(f"Retrying {data_type} {event_type}...")
             status = register_webhook_subscription(
                 config,
                 participant_id=participant_id,
@@ -69,7 +69,7 @@ def register_all_webhooks(config, participant_id, retries=3):
                 event_type=event_type
             )
             if status != 201:
-                still_failed.append(data_type)
+                still_failed.append([data_type, event_type])
             time.sleep(1.5)
         failed = still_failed
 

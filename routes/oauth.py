@@ -11,7 +11,7 @@ def register_oauth_routes(app, config):
         participant_id = request.args.get("participant_id")
         if not participant_id:
             return "Missing participant ID", 400
-        scope = " ".join(config["data_types"])
+        scope = " ".join(config["data_scopes"])
         auth_params = {
             "client_id": config["client_id"],
             "redirect_uri": f"{config['server_address']}/callback",

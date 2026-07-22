@@ -1,0 +1,33 @@
+{
+  "server_address": "https://ouralisten.bcmelias.com",
+  "webhook_path": "/oura-webhook",
+  "webhook_port": 5000,
+  "unmatched_webhook_posts": "/home/ec2-user/oura_webhook_listener/oura_data/unmatched_webhook_posts",
+  "projects": {
+    "trbd": {
+      "token_file": "/home/ec2-user/trbd/data/oura_tokens.json",
+      "participant_map": "/home/ec2-user/trbd/data/participant_map.json",
+      "webhook_posts": "/home/ec2-user/trbd/data/webhook_posts"
+    },
+    "aa": {
+      "token_file": "/home/ec2-user/aa/data/oura_tokens.json",
+      "participant_map": "/home/ec2-user/aa/data/participant_map.json",
+      "webhook_posts": "/home/ec2-user/aa/data/posts"
+    },
+    "percept": {
+      "token_file": "/home/ec2-user/percept/data/oura_tokens.json",
+      "participant_map": "/home/ec2-user/percept/data/participant_map.json",
+      "webhook_posts": "/home/ec2-user/percept/data/webhook_posts"
+    },
+    "emu": {
+      "token_file": "/home/ec2-user/emu/oura_data/oura_tokens.json",
+      "participant_map": "/home/ec2-user/emu/oura_data/participant_map.json",
+      "webhook_posts": "/home/ec2-user/emu/oura_data/webhook_posts"
+    },
+    "utah": {
+      "token_file": "/home/ec2-user/utah/data/oura_tokens.json",
+      "participant_map": "/home/ec2-user/utah/data/participant_map.json",
+      "webhook_posts": "/home/ec2-user/utah/data/webhook_posts"
+    }
+  }
+}

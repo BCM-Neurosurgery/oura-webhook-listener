@@ -1,0 +1,1 @@
+15 3,15 * * * /usr/bin/flock -n /run/lock/oura-certbot.lock /home/ec2-user/oura_webhook_listener/scripts/renew-certificate.sh >> /var/log/oura-certbot.log 2>&1

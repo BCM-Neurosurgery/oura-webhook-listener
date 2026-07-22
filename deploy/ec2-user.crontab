@@ -1,0 +1,3 @@
+0 */12 * * * /home/ec2-user/oura_webhook_listener/scripts/run-job.sh refresh /home/ec2-user/oura_env/bin/python -m utils.refresh_tokens
+15 2 * * * /home/ec2-user/oura_webhook_listener/scripts/run-job.sh subscriptions /home/ec2-user/oura_env/bin/python -m utils.subscriptions ensure
+30 */6 * * * /home/ec2-user/oura_webhook_listener/scripts/run-job.sh health /home/ec2-user/oura_env/bin/python -m utils.health_check

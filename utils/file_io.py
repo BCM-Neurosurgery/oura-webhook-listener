@@ -1,50 +1,62 @@
-import os, json, requests
+"""Locked JSON reads/writes and loss-resistant webhook storage."""
+
+from __future__ import annotations
+
+import fcntl
+import hashlib
+import json
+import os
+import tempfile
+from contextlib import contextmanager
 from datetime import datetime
+from pathlib import Path
+from typing import Union
 from zoneinfo import ZoneInfo
 
-def save_webhook_data(data, base_dir):
-    user_id = data.get("user_id")
-    data_type = data.get("data_type")
 
-    if not user_id or not data_type:
-        raise ValueError("Missing user_id or data_type in webhook event")
+@contextmanager
+def file_lock(path: Union[str, Path]):
+    lock_path = Path(f"{path}.lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
 
-    # Paths
-    map_path = os.path.normpath(os.path.join(base_dir, "..", "participant_map.json"))
-    token_path = os.path.normpath(os.path.join(base_dir, "..", "oura_tokens.json"))
-    
-    # Load participant map
-    user_map = {}
-    if os.path.exists(map_path):
-        with open(map_path, "r") as f:
-            user_map = json.load(f)
 
-    # If user_id not mapped yet, attempt to match from token entries
-    if user_id not in user_map:
-        with open(token_path, "r") as f:
-            all_tokens = json.load(f)
-        for participant_id, token_info in all_tokens.items():
-            # Assume only one participant is authorized at a time
-            if participant_id not in user_map.values():
-                user_map[user_id] = participant_id
-                with open(map_path, "w") as f:
-                    json.dump(user_map, f, indent=2)
-                print(f"[Mapping] Mapped user_id {user_id} → participant_id {participant_id}")
-                break
-        else:
-            raise ValueError("Could not infer participant_id for user_id")
+def read_json(path: Union[str, Path], default=None):
+    path = Path(path)
+    if not path.exists():
+        return default
+    with path.open(encoding="utf-8") as handle:
+        return json.load(handle)
 
-    participant_id = user_map[user_id]
 
-    # Save webhook data
-    timestamp = datetime.now(ZoneInfo("America/Chicago")).strftime("%Y-%m-%dT%H-%M-%S")
-    save_path = os.path.join(base_dir, participant_id, data_type)
-    os.makedirs(save_path, exist_ok=True)
+def atomic_write_json(path: Union[str, Path], data) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
-    with open(os.path.join(save_path, f"{timestamp}.json"), "w") as f:
-        json.dump(data, f, indent=2)
 
-def send_webhook_signal(timestamp, path):
-    os.makedirs(path, exist_ok=True)
-    with open(os.path.join(path, f"{timestamp}.json"), "w") as f:
-        json.dump({"event": "new_webhook", "timestamp": timestamp}, f, indent=2)
+def save_payload(root: Union[str, Path], payload: dict) -> Path:
+    body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    digest = hashlib.sha256(body).hexdigest()[:12]
+    now = datetime.now(ZoneInfo("America/Chicago"))
+    timestamp = now.strftime("%Y-%m-%dT%H-%M-%S")
+    directory = Path(root)
+    with file_lock(directory / ".webhook-write"):
+        path = directory / f"{timestamp}.json"
+        if path.exists():
+            path = directory / f"{timestamp}--{now.strftime('%f')}-{digest}.json"
+        atomic_write_json(path, payload)
+    return path

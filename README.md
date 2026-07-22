@@ -1,66 +1,75 @@
-# Oura Sync Project
+# Oura webhook listener
 
-This project is part of a larger pipeline to manage multi-modal data collection for clinical research. This repo is a lightweight system to listen to posts from a webhook. It will ideally listen to posts from the [Oura Ring]([https://cloud.ouraring.com/docs/]) API and save the details of the post. It will also save the post timestamp for a checker (integrated into another system) to see that there is new data available. The ultimate goal is to deploy this to an EC2 server and integrate it into a shared data infrastructure.
+A small Flask service that manages Oura OAuth, webhook subscriptions, and webhook storage for TRBD, AA, Percept, EMU, and Utah.
 
-## Project Structure
+One Gunicorn process serves every project. Each project keeps separate token, participant-map, and webhook directories defined in `config.json`.
+
+## Setup
 
 ```bash
-oura_webhook_listener/
-├── config.json                # API keys, server URLs, folder paths
-├── run_webhook.py             # Starts the Flask webhook server
-├── register_webhook.py        # Registers webhook subscriptions with Oura API
-├── requirements.txt           # (Optional) pip-based dependencies
-├── README.md                  # Project overview and instructions
-│
-├── logs/                      # (Optional) log files for server or cron jobs
-│
-├── oura_data/                 # Auto-created at runtime
-│   ├── oura_tokens.json       # Stores OAuth2 tokens per participant
-│   ├── participant_map.json   # Maps Oura user IDs to participant IDs
-│   ├── upload_state.json      # Tracks processed webhook files
-│   └── webhook_posts/         # Stores full webhook payloads by user/modality
-│       └── <user>/
-│           └── <modality>/
-│               └── <timestamp>.json
-│
-├── routes/                    # Flask route definitions
-├── services/                  # OAuth2 and Oura API helper modules
-└── utils/                     # Helper utilities (e.g., token refresh scripts)    
+python3 -m venv /home/ec2-user/oura_env
+/home/ec2-user/oura_env/bin/pip install -r requirements.txt
+cp config.example.json config.json
 ```
 
-## Project Requirements
-This project is built for Python 3.10** using Conda. You can install dependencies through Conda or pip.
+Edit `config.json` to point to the existing project data directories. Keep credentials in `/etc/oura-listener.env`, using `deploy/oura-listener.env.example` as the template.
 
-### Conda Installation
 ```bash
-conda env create -f environment.yml
-conda activate oura_env
-```
-### Pip Installation
-```bash
-pip install -r requirements.txt
+sudo cp deploy/oura-listener.env.example /etc/oura-listener.env
+sudo chown root:ec2-user /etc/oura-listener.env
+sudo chmod 640 /etc/oura-listener.env
+sudoedit /etc/oura-listener.env
+
+sudo cp deploy/oura-global-listener.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now oura-global-listener.service
+
+sudo mkdir -p /etc/nginx/conf.d/ouralisten
+sudo cp deploy/nginx.conf /etc/nginx/conf.d/ouralisten/oura.conf
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-## Testing Webhook Listener
-From the project folder, run:
-```bash
-python run_webhook.py
+Register these callbacks in the Oura application:
+
+```text
+https://ouralisten.bcmelias.com/trbd/callback
+https://ouralisten.bcmelias.com/aa/callback
+https://ouralisten.bcmelias.com/percept/callback
+https://ouralisten.bcmelias.com/emu/callback
+https://ouralisten.bcmelias.com/utah/callback
 ```
 
-You'll see something like this (if it was successful):
+Install the schedules from `deploy/ec2-user.crontab` and `deploy/root.crontab`, preserving any unrelated cron entries already on the server.
+
+## Check the service
+
 ```bash
-Running on <LOCAL_SERVER>
+cd /home/ec2-user/oura_webhook_listener
+set -a; source /etc/oura-listener.env; set +a
+
+python -m utils.preflight
+python -m utils.subscriptions ensure
+python -m utils.subscriptions list
+python -m utils.health_check
 ```
 
-In second terminal, send a curl post to test the Flask listener (see curl_commands.txt for an idea of what to send):
-```bash
-curl -X POST <LOCAL_SERVER>/v2/webhook/subscription \
-     -H "Content-Type: application/json" \
-     -d '{
-           "event": "sleep",
-           "summary_date": "2025-05-08",
-           "source": "simulated_test"
-         }'
+Participant enrollment starts at:
+
+```text
+https://ouralisten.bcmelias.com/<project>/authorize?participant_id=PARTICIPANT_ID
 ```
 
-You should be able to see posts in both oura_data/webhook_comms/ -> should be the event and timestamp and oura_data/webhook_posts/ -> should be the message you sent with curl. These file names should be the same timestamp. 
+## Safety
+
+- Secrets, tokens, participant maps, logs, and webhook data are excluded from Git.
+- Webhook writes are locked and atomic; unmatched events are preserved.
+- Cron jobs use `flock` to prevent overlap.
+- Disabled participant tokens are retained but skipped during refresh.
+- No automatic data-deletion job is included.
+
+Run tests with:
+
+```bash
+python -m pytest -q
+python -m ruff check .
+```

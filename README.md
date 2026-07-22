@@ -59,14 +59,6 @@ Participant enrollment starts at:
 https://ouralisten.bcmelias.com/<project>/authorize?participant_id=PARTICIPANT_ID
 ```
 
-## Safety
-
-- Secrets, tokens, participant maps, logs, and webhook data are excluded from Git.
-- Webhook writes are locked and atomic; unmatched events are preserved.
-- Cron jobs use `flock` to prevent overlap.
-- Disabled participant tokens are retained but skipped during refresh.
-- No automatic data-deletion job is included.
-
 Run tests with:
 
 ```bash

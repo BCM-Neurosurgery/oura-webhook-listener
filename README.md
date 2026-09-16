@@ -19,7 +19,7 @@ oura_webhook_listener/
 │   ├── participant_map.json   # Maps Oura user IDs to participant IDs
 │   ├── upload_state.json      # Tracks processed webhook files
 │   └── webhook_posts/         # Stores full webhook payloads by user/modality
-│       └── <user>/
+│       └── <participant_id>/
 │           └── <modality>/
 │               └── <timestamp>.json
 │
@@ -41,6 +41,9 @@ conda activate oura_env
 pip install -r requirements.txt
 ```
 
+Copy `config.example.json` to `config.json`, replace its placeholders, and keep
+`config.json`, tokens, participant maps, and webhook payloads out of Git.
+
 ## Testing Webhook Listener
 From the project folder, run:
 ```bash
@@ -52,7 +55,7 @@ You'll see something like this (if it was successful):
 Running on <LOCAL_SERVER>
 ```
 
-In second terminal, send a curl post to test the Flask listener (see curl_commands.txt for an idea of what to send):
+In second terminal, send a curl post to test the Flask listener:
 ```bash
 curl -X POST <LOCAL_SERVER>/v2/webhook/subscription \
      -H "Content-Type: application/json" \
@@ -62,5 +65,3 @@ curl -X POST <LOCAL_SERVER>/v2/webhook/subscription \
            "source": "simulated_test"
          }'
 ```
-
-You should be able to see posts in both oura_data/webhook_comms/ -> should be the event and timestamp and oura_data/webhook_posts/ -> should be the message you sent with curl. These file names should be the same timestamp. 

@@ -1,0 +1,13 @@
+{
+  "client_id": "YOUR_OURA_CLIENT_ID",
+  "client_secret": "YOUR_OURA_CLIENT_SECRET",
+  "verification_token": "A_LONG_RANDOM_WEBHOOK_VERIFICATION_TOKEN",
+  "oauth_state_secret": "A_SEPARATE_LONG_RANDOM_OAUTH_STATE_SECRET",
+  "server_address": "https://your-public-webhook.example",
+  "webhook_port": 5000,
+  "data_dir": "oura_data",
+  "webhook_posts": "oura_data/webhook_posts",
+  "data_scopes": ["personal", "daily"],
+  "data_types": ["daily_sleep"],
+  "event_types": ["create", "update"]
+}
